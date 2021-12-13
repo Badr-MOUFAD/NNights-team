@@ -1,0 +1,21 @@
+name,elevation_ft,municipality,iata_code,latitude,longitude
+Hartsfield Jackson Atlanta International Airport,1026.0,Atlanta,ATL,33.6367,-84.428101
+General Edward Lawrence Logan International Airport,20.0,Boston,BOS,42.36429977,-71.00520325
+Charlotte Douglas International Airport,748.0,Charlotte,CLT,35.2140007019043,-80.94309997558594
+Denver International Airport,5431.0,Denver,DEN,39.861698150635,-104.672996521
+Dallas Fort Worth International Airport,607.0,Dallas-Fort Worth,DFW,32.896801,-97.038002
+Detroit Metropolitan Wayne County Airport,645.0,Detroit,DTW,42.212398529052734,-83.35340118408203
+Newark Liberty International Airport,18.0,Newark,EWR,40.692501068115234,-74.168701171875
+George Bush Intercontinental Houston Airport,97.0,Houston,IAH,29.984399795532227,-95.34140014648438
+John F Kennedy International Airport,13.0,New York,JFK,40.63980103,-73.77890015
+McCarran International Airport,2181.0,Las Vegas,LAS,36.08010101,-115.1520004
+Los Angeles International Airport,125.0,Los Angeles,LAX,33.94250107,-118.4079971
+La Guardia Airport,21.0,New York,LGA,40.77719879,-73.87259674
+Orlando International Airport,96.0,Orlando,MCO,28.429399490356445,-81.30899810791016
+Miami International Airport,8.0,Miami,MIA,25.79319953918457,-80.29060363769531
+Minneapolis-St Paul International/Wold-Chamberlain Airport,841.0,Minneapolis,MSP,44.882,-93.221802
+Chicago O'Hare International Airport,672.0,Chicago,ORD,41.9786,-87.9048
+Philadelphia International Airport,36.0,Philadelphia,PHL,39.87189865112305,-75.24109649658203
+Phoenix Sky Harbor International Airport,1135.0,Phoenix,PHX,33.43429946899414,-112.01200103759766
+Seattle Tacoma International Airport,433.0,Seattle,SEA,47.449001,-122.308998
+San Francisco International Airport,13.0,San Francisco,SFO,37.61899948120117,-122.375
