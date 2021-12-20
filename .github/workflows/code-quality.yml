@@ -23,6 +23,6 @@ jobs:
           flake8 nnights/
           
       - name: install and run pydocstyle
-        run:
+        run: |
           pip install pydocstyle
-          pydocstyle nnights/ 
+          pydocstyle nnights/
