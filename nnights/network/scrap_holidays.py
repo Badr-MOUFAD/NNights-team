@@ -15,7 +15,9 @@ dict_holidays = {
 dict_month_day_duration = {
     "month": [],
     "start": [],
-    "duration": []
+    "end": [],
+    "duration": [],
+    "month-day": []
 }
 
 
@@ -70,6 +72,7 @@ for i in range(len(df)):
     start, end = int(day[0]), int(day[-1])
 
     dict_month_day_duration["start"].append(start)
+    dict_month_day_duration["end"].append(end)
     dict_month_day_duration["duration"].append(end-start + 1)
 
 # arrange in df and concat
@@ -77,4 +80,4 @@ df_extra_info = pd.DataFrame(dict_month_day_duration)
 df_holidays = pd.concat([df, df_extra_info], axis=1)
 
 # save
-df_holidays.to_csv("./data/holidays.csv", index=False)
+df_holidays.to_csv("./data/usa_holidays.csv", index=False)
