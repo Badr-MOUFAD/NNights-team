@@ -1,4 +1,14 @@
+"""A summary."""
+
+
 def add_x():
+    """[summary].
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
     return 0
 
 

@@ -1,3 +1,5 @@
+"""summary."""
+
 import requests
 import re
 
@@ -27,8 +29,13 @@ html_page = BeautifulSoup(page.content, "html.parser")
 # select holiday table
 holiday_table = html_page.find("table", class_="wikitable")
 
+
 # extract from table
-for row in holiday_table.find_all("tr", attrs={"style": lambda s: s != "background:#efefef;"}):
+def style_selector(s):  # noqa
+    return s != "background:#efefef;"
+
+
+for row in holiday_table.find_all("tr", attrs={"style": style_selector}):
     # extract useful infos
     holiday_date = row.find("th").text
     holiday_name = row.find("td").text
