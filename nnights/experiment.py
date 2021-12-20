@@ -4,8 +4,7 @@ import pandas as pd
 
 
 class Experiment():
-    """summary.
-    """
+    """summary."""
 
     def __init__(self, data) -> None:  # noqa
         self.data = data
