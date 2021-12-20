@@ -37,7 +37,7 @@ for row in holiday_table.find_all("tr", attrs={"style": lambda s: s != "backgrou
     dict_holidays["date"].append(holiday_date)
     dict_holidays["name"].append(holiday_name)
 
-# create / save df
+# put dict in df
 df = pd.DataFrame(dict_holidays)
 
 # remove \n and (.)

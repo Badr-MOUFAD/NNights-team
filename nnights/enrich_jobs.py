@@ -1,12 +1,5 @@
 def add_x():
-    return 0 
+    return 0
 
 
-
-
-
-
-
-
-
-dict_enrich =     {}
+dict_enrich = {}

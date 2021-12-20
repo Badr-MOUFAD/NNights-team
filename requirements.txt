@@ -2,3 +2,5 @@ numpy
 pandas
 requests
 beautifulsoup4
+flake8
+pydocstyle
