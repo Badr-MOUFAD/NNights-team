@@ -1,4 +1,9 @@
-"""A summary of this file."""
+"""Utils to manipulate holidays.
+
+Utils to extract useful informations from a given
+data frame of holidays. Note that the data frame of holidays
+must be sorted in an ascendant order.
+"""
 
 import pandas as pd
 
@@ -138,3 +143,54 @@ def distance_previous_holiday(d: pd.Timestamp) -> int:
 
         if duration.days >= 0:
             return duration.days
+
+
+def distance_to_holidays(d: pd.Timestamp) -> pd.Series:
+    """Compute distance between date and all holidays.
+
+    We use `min(abs(.))` as a norm to compare distances.
+
+    Parameters
+    ----------
+    d : pd.Timestamp
+        date
+
+    Returns
+    -------
+    pd.Series
+        returns a Serie of distances between the given day and holidays
+
+    """
+    year = d.year
+
+    # where to store distances
+    prev_current_next_distances = {
+        "prev": [],
+        "current": [],
+        "next": []
+    }
+
+    # compute distances
+    for i in USA_HOLIDAYS.index:
+        # holiday infos
+        month = USA_HOLIDAYS.loc[i, "month"]
+        duration = USA_HOLIDAYS.loc[i, "duration"]
+        day = USA_HOLIDAYS.loc[i, "start"] + int(duration / 2)
+
+        for incr, name_year in zip([-1, 0, 1], prev_current_next_distances):
+            holiday_date = pd.Timestamp(f"{year+incr}-{month}-{day}")
+            distance = holiday_date - d
+
+            prev_current_next_distances[name_year].append(distance.days)
+
+    # select relevant distances
+    df_distances = pd.DataFrame(
+        prev_current_next_distances,
+        index=USA_HOLIDAYS["name"]
+    )
+
+    # func to use in aggregation
+    def agg_function(arr):
+        return min(arr, key=lambda x: abs(x))
+
+    return df_distances.agg(agg_function, axis=1)
