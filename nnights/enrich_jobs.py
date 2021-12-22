@@ -218,3 +218,6 @@ def add_day_of_year(df: pd.DataFrame) -> pd.DataFrame:
     new_cols = ['day_of_year']
 
     return df, new_cols
+
+
+dict_enrich = {'day_of_year': add_day_of_year}
