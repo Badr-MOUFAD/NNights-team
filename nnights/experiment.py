@@ -1,11 +1,13 @@
-import pandas as pd
-import pprint
-from nnights.enrich_jobs import dict_enrich
-from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
+"""[summary]."""
 
-from sklearn.model_selection import train_test_split
+from typing import List
 import numpy as np
+import pandas as pd
 
+from nnights.enrich_jobs import dict_enrich
+
+from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
 
@@ -16,15 +18,23 @@ class Experiment():
         self.data = data
         self.name = name
 
-        self.meta = {'cache': {'data': None,
-                               'x_columns': []},
-                     'exp_name': self.name
-
-                     }
+        self.meta = {
+            'cache': {
+                'data': None,
+                'x_columns': []
+            },
+            'exp_name': self.name
+        }
 
         pass
 
-    def enrich_jobs(self, config: dict, is_inference=False, data=None,):
+    def enrich_jobs(
+        self,
+        config: dict,
+        is_inference: bool = False,
+        data: pd.DataFrame = None
+    ):
+        """[summary]."""
         if is_inference:
             data_copy = data
         else:
@@ -45,8 +55,13 @@ class Experiment():
 
         return data_copy, new_columns
 
-    def model(self, data, x_columns, config):
-
+    def model(
+        self,
+        data: pd.DataFrame,
+        x_columns: List[str],
+        config: dict
+    ):
+        """[summary]."""
         test_size = config.get('test_size', 0.2)
         # prepare X,y
         X = data[x_columns]
@@ -65,7 +80,12 @@ class Experiment():
         self.model = model
         pass
 
-    def run(self, config: dict, use_cache=False) -> pd.DataFrame:
+    def run(
+        self,
+        config: dict,
+        use_cache: bool = False
+    ) -> pd.DataFrame:
+        """[summary]."""
         if use_cache:  # skip enrichment
             pass
 
@@ -87,7 +107,7 @@ class Experiment():
                 self.meta['cache']['enrich_config'] = config_enrich
 
         # extract data and x_columns
-        data = self.meta['cache']['data']
+        # data = self.meta['cache']['data']
         x_columns = self.meta['cache']['x_columns']
 
         # step 2 : model
@@ -95,13 +115,14 @@ class Experiment():
         if config_model:
             print('model start ...')
             print('x_columns : ', x_columns)
-           # print(x_columns)
-            model = self.model(data, x_columns, config_model)
+            # print(x_columns)
+            # model = self.model(data, x_columns, config_model)
 
     def freeze(self):
-        enrich_config = self.meta['cache']['enrich_config']
-        model_inspection = {}
-        model = self.model
+        """[summary]."""
+        # enrich_config = self.meta['cache']['enrich_config']
+        # model_inspection = {}
+        # model = self.model
         # todo
         # pickle model
         # get model meta (feat imporatnce amd score)
