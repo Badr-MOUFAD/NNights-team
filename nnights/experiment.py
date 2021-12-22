@@ -12,11 +12,13 @@ from sklearn.metrics import mean_squared_error
 class Experiment():
     """summary."""
 
-    def __init__(self, data) -> None:  # noqa
+    def __init__(self, name, data) -> None:  # noqa
         self.data = data
+        self.name = name
 
         self.meta = {'cache': {'data': None,
                                'x_columns': []},
+                     'exp_name': self.name
 
                      }
 
@@ -60,6 +62,7 @@ class Experiment():
         y_pred = model.predict(X_test)
         rmse = np.sqrt(mean_squared_error(y_test, y_pred))
         print('rmse on test', rmse)
+        self.model = model
         pass
 
     def run(self, config: dict, use_cache=False) -> pd.DataFrame:
@@ -80,6 +83,8 @@ class Experiment():
             else:
                 self.meta['cache']['data'] = self.data
                 self.meta['cache']['x_columns'] = x_cols
+                # store enrichment config for inference reproduction
+                self.meta['cache']['enrich_config'] = config_enrich
 
         # extract data and x_columns
         data = self.meta['cache']['data']
@@ -92,3 +97,15 @@ class Experiment():
             print('x_columns : ', x_columns)
            # print(x_columns)
             model = self.model(data, x_columns, config_model)
+
+    def freeze(self):
+        enrich_config = self.meta['cache']['enrich_config']
+        model_inspection = {}
+        model = self.model
+        # todo
+        # pickle model
+        # get model meta (feat imporatnce amd score)
+
+
+# feature importance util
+# exp diff on previous model got from freeze
