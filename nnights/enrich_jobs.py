@@ -9,7 +9,7 @@ import pandas as pd
 
 
 # load usa holidays
-USA_HOLIDAYS = pd.read_csv("./data/usa_holidays.csv")
+USA_HOLIDAYS = pd.read_csv("../data/usa_holidays.csv")
 
 
 def is_holiday(d: pd.Timestamp) -> bool:
