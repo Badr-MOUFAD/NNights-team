@@ -194,3 +194,27 @@ def distance_to_holidays(d: pd.Timestamp) -> pd.Series:
         return min(arr, key=lambda x: abs(x))
 
     return df_distances.agg(agg_function, axis=1)
+
+
+def add_day_of_year(df: pd.DataFrame) -> pd.DataFrame:
+    """Add day of year to a data frame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        data frame
+
+    Returns
+    -------
+    pd.DataFrame
+        returns a data frame with a new column
+
+    """
+    df["day_of_year"] = df.apply(
+        lambda x: x["date"].dayofyear,
+        axis=1
+    )
+    # get new cols
+    new_cols = ['day_of_year']
+
+    return df, new_cols
