@@ -1,9 +1,12 @@
 import pandas as pd
 import pprint
 from nnights.enrich_jobs import dict_enrich
-from xgboost import XGBRegressor
+from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
 
 from sklearn.model_selection import train_test_split
+import numpy as np
+
+from sklearn.metrics import mean_squared_error
 
 
 class Experiment():
@@ -14,7 +17,7 @@ class Experiment():
 
         self.meta = {'cache': {'data': None,
                                'x_columns': []},
-                     'data': data
+
                      }
 
         pass
@@ -40,23 +43,23 @@ class Experiment():
 
         return data_copy, new_columns
 
-    def model(self, data, x_columns, config: dict):
-        pprint.pprint(config)
+    def model(self, data, x_columns, config):
+
         test_size = config.get('test_size', 0.2)
         # prepare X,y
         X = data[x_columns]
         y = data['target']
         # split data int train and test
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42)
+            X, y, test_size=test_size, random_state=42)
 
-        model = XGBRegressor()
+        model = Gb_regressor()
         # fit
-        model.fit(X_train, y_train, verbose=False)
-       # score model
-        score = model.score(X_test, y_test)
-        print(f'Score : {score}')
-
+        model.fit(X_train, y_train)
+        # compute rmse on test data
+        y_pred = model.predict(X_test)
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        print('rmse on test', rmse)
         pass
 
     def run(self, config: dict, use_cache=False) -> pd.DataFrame:
@@ -68,7 +71,9 @@ class Experiment():
             config_enrich = config.get('enrich', None)
             x_cols = config.get('x_columns', [])
             if config_enrich:
+                print('enrich start ... ')
                 enriched_data, new_cols = self.enrich_jobs(config_enrich)
+
                 # cache element
                 self.meta['cache']['data'] = enriched_data
                 self.meta['cache']['x_columns'] = x_cols + new_cols
@@ -83,4 +88,7 @@ class Experiment():
         # step 2 : model
         config_model = config.get('model', None)
         if config_model:
+            print('model start ...')
+            print('x_columns : ', x_columns)
+           # print(x_columns)
             model = self.model(data, x_columns, config_model)

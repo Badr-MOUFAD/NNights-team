@@ -210,14 +210,27 @@ def add_day_of_year(df: pd.DataFrame) -> pd.DataFrame:
         returns a data frame with a new column
 
     """
+    # flight_date to date
+    df['flight_date'] = pd.to_datetime(df['flight_date'])
     df["day_of_year"] = df.apply(
-        lambda x: x["date"].dayofyear,
+        lambda x: x["flight_date"].dayofyear,
         axis=1
     )
     # get new cols
     new_cols = ['day_of_year']
 
-    return df, new_cols
+    return new_cols
 
 
-dict_enrich = {'day_of_year': add_day_of_year}
+def encode_loc(df):
+    from sklearn.preprocessing import LabelEncoder
+    encoder = LabelEncoder()
+    encoder.fit(df['from'])
+    df['from_enc'] = encoder.transform(df['from'])
+    df['to_enc'] = encoder.transform(df['to'])
+    new_cols = ['from_enc', 'to_enc']
+    return new_cols
+
+
+dict_enrich = {'add_day_of_year': add_day_of_year,
+               'encode_locations': encode_loc}
