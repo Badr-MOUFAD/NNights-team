@@ -1,196 +1,164 @@
-"""Utils to manipulate holidays.
+"""Jobs run on data to enrich it.
 
-Utils to extract useful informations from a given
-data frame of holidays. Note that the data frame of holidays
-must be sorted in an ascendant order.
+A job is a function that takes the flight data frame as inputs
+add columns to it and then outputs theses added columns.
 """
 
+from typing import List
+
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+from .holiday_utils import (is_holiday, distance_next_holiday,
+                            distance_previous_holiday,
+                            distance_to_holidays)
 
 
-# load usa holidays
-USA_HOLIDAYS = pd.read_csv("./data/usa_holidays.csv")
-
-
-def is_holiday(d: pd.Timestamp) -> bool:
-    """Determine if a day is holiday.
-
-    Parameters
-    ----------
-    d : pd.Timestamp
-        date
-
-    Returns
-    -------
-    bool
-        returns whether the current date is a holiday
-    """
-    # select range of search
-    df_potential_holidays = USA_HOLIDAYS.query(f"month == {d.month}")
-
-    # extract day
-    day = d.day
-
-    for i in df_potential_holidays.index:
-        # current holiday bounds
-        start = df_potential_holidays.loc[i, "start"]
-        end = df_potential_holidays.loc[i, "end"]
-
-        if start <= day <= end:
-            return True
-
-    return False
-
-
-def distance_next_holiday(d: pd.Timestamp) -> int:
-    """Compute the number of days to the next holiday.
+def add_is_holiday(df: pd.DataFrame) -> List[str]:
+    """Determine if dates are holidays.
 
     Parameters
     ----------
-    d : pd.Timestamp
-        date
+    df : pd.DataFrame
+        flight data frame.
 
     Returns
     -------
-    int
-        returns the number of days
+    List[str]
+        returns list of added columns.
 
     """
-    # case d > latest(holidays)
-    current_year = d.year
+    df["is_holiday"] = df["flight_date"].apply(is_holiday)
 
-    # select latest holiday
-    last_index = len(USA_HOLIDAYS) - 1
-    latest_holiday = {
-        "day": USA_HOLIDAYS.loc[last_index, "start"],
-        "month": USA_HOLIDAYS.loc[last_index, "month"],
-        "year": current_year
-    }
-
-    if pd.Timestamp(**latest_holiday) < d:
-        first_holiday = {
-            "day": USA_HOLIDAYS.loc[0, "start"],
-            "month": USA_HOLIDAYS.loc[0, "month"],
-            "year": current_year + 1
-        }
-        duration = pd.Timestamp(**first_holiday) - d
-        return duration.days
-
-    # select area of search
-    df_selected_holidays = USA_HOLIDAYS.query(f"month >= {d.month}")
-
-    for i in df_selected_holidays.index:
-        current_holiday = {
-            "day": df_selected_holidays.loc[i, "start"],
-            "month": df_selected_holidays.loc[i, "month"],
-            "year": current_year
-        }
-
-        duration = pd.Timestamp(**current_holiday) - d
-
-        if duration.days >= 0:
-            return duration.days
+    new_cols = ["is_holiday"]
+    return new_cols
 
 
-def distance_previous_holiday(d: pd.Timestamp) -> int:
-    """Compute the number of days to the previous holiday.
+def add_distance_to_next_holiday(df: pd.DataFrame) -> List[str]:
+    """Compute distance to the next holiday.
 
     Parameters
     ----------
-    d : pd.Timestamp
-        date
+    df : pd.DataFrame
+        flight data frame.
 
     Returns
     -------
-    int
-        returns the number of days
+    List[str]
+        returns list of added columns.
 
     """
-    # case d < first(holidays)
-    current_year = d.year
+    df["distance_to_next_holiday"] = df["flight_date"].apply(
+        distance_next_holiday)
 
-    # select first holiday
-    first_holiday = {
-        "day": USA_HOLIDAYS.loc[0, "end"],
-        "month": USA_HOLIDAYS.loc[0, "month"],
-        "year": current_year
-    }
-
-    if d < pd.Timestamp(**first_holiday):
-        latest_index = len(USA_HOLIDAYS) - 1
-
-        # select latest holiday
-        latest_holiday = {
-            "day": USA_HOLIDAYS.loc[latest_index, "end"],
-            "month": USA_HOLIDAYS.loc[latest_index, "month"],
-            "year": current_year - 1
-        }
-
-        duration = d - pd.Timestamp(**latest_holiday)
-        return duration.days
-
-    # select area of search
-    df_selected_holidays = USA_HOLIDAYS.query(f"month <= {d.month}")
-
-    for i in df_selected_holidays.index[::-1]:
-        current_holiday = {
-            "day": df_selected_holidays.loc[i, "end"],
-            "month": df_selected_holidays.loc[i, "month"],
-            "year": current_year
-        }
-
-        duration = d - pd.Timestamp(**current_holiday)
-
-        if duration.days >= 0:
-            return duration.days
+    new_cols = ["distance_to_next_holiday"]
+    return new_cols
 
 
-def distance_to_holidays(d: pd.Timestamp) -> pd.Series:
-    """Compute distance between date and all holidays.
-
-    We use `min(abs(.))` as a norm to compare distances.
+def add_distance_to_previous_holiday(df: pd.DataFrame) -> List[str]:
+    """Compute the distance to the previous holiday.
 
     Parameters
     ----------
-    d : pd.Timestamp
-        date
+    df : pd.DataFrame
+        flight data frame.
 
     Returns
     -------
-    pd.Series
-        returns a Serie of distances between the given day and holidays
+    List[str]
+        returns list of added columns.
 
     """
-    year = d.year
+    df["distance_to_previous_holiday"] = df["flight_date"].apply(
+        distance_previous_holiday)
 
-    # where to store distances
-    prev_current_next_distances = {
-        "prev": [],
-        "current": [],
-        "next": []
-    }
+    new_cols = ["distance_to_previous_holiday"]
+    return new_cols
 
-    # compute distances
-    for i in USA_HOLIDAYS.index:
-        # holiday infos
-        month = USA_HOLIDAYS.loc[i, "month"]
-        duration = USA_HOLIDAYS.loc[i, "duration"]
-        day = USA_HOLIDAYS.loc[i, "start"] + int(duration / 2)
 
-        for incr, name_year in zip([-1, 0, 1], prev_current_next_distances):
-            holiday_date = pd.Timestamp(f"{year+incr}-{month}-{day}")
-            distance = holiday_date - d
+def add_distance_to_holidays(df: pd.DataFrame) -> List[str]:
+    """Compute the distance between dates and holidays.
 
-            prev_current_next_distances[name_year].append(distance.days)
+    Parameters
+    ----------
+    df : pd.DataFrame
+        flight data frame.
 
-    # select relevant distances
-    df_distances = pd.DataFrame(
-        prev_current_next_distances,
-        index=USA_HOLIDAYS["name"]
+    Returns
+    -------
+    List[str]
+        returns list of added columns.
+
+    """
+    # compute distance to holidays
+    df_distances = pd.concat(
+        [distance_to_holidays(d) for d in df["flight_date"]],
+        axis=1,
+    ).T
+
+    # add to df
+    for col in df_distances.columns:
+        df[f"distance_to_{col}"] = df_distances[col]
+
+    new_cols = df_distances.columns
+    return new_cols
+
+
+def add_day_of_year(df: pd.DataFrame) -> List[str]:
+    """Add day of year to data frame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        flight data frame.
+
+    Returns
+    -------
+    List[str]
+        returns list of added columns.
+
+    """
+    # flight_date to date
+    df['flight_date'] = pd.to_datetime(df['flight_date'])
+    df["day_of_year"] = df.apply(
+        lambda x: x["flight_date"].dayofyear,
+        axis=1
     )
+    # get new cols
+    new_cols = ['day_of_year']
 
-    # func to use in aggregation
-    def agg_function(arr):
-        return min(arr, key=lambda x: abs(x))
+    return new_cols
 
-    return df_distances.agg(agg_function, axis=1)
+
+def encode_loc(df: pd.DataFrame) -> List[str]:
+    """Encode.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        flight data frame.
+
+    Returns
+    -------
+    List[str]
+        returns list of added columns.
+
+    """
+    encoder = LabelEncoder()
+    encoder.fit(df['from'])
+
+    df['from_enc'] = encoder.transform(df['from'])
+    df['to_enc'] = encoder.transform(df['to'])
+
+    new_cols = ['from_enc', 'to_enc']
+    return new_cols
+
+
+dict_enrich = {
+    'add_is_holiday': add_is_holiday,
+    'add_distance_to_next_holiday': add_distance_to_next_holiday,
+    'add_distance_to_previous_holiday': add_distance_to_previous_holiday,
+    'add_distance_to_holidays': add_distance_to_holidays,
+    'add_day_of_year': add_day_of_year,
+    'encode_locations': encode_loc,
+}
