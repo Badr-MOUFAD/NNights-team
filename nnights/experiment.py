@@ -163,7 +163,8 @@ class Experiment():
         # get enrich config.
         enrich_config = self.meta['cache']['enrich_config']
         # enrich data
-        X_data_enrich, _ = self.enrich_jobs(enrich_config)
+        X_data_enrich, _ = self.enrich_jobs(
+            enrich_config, data=X_data, is_inference=True)
         # get model and x_cols from cache
         model = self.meta['cache']['model']
         x_columns = self.meta['cache']['x_columns']
