@@ -7,7 +7,7 @@ import pandas as pd
 import json
 import joblib
 
-#from nnights.enrich_jobs import dict_enrich
+from nnights.enrich_jobs import dict_enrich
 
 from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
 from sklearn.model_selection import train_test_split
