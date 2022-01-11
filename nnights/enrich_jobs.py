@@ -9,11 +9,11 @@ add columns to it and then outputs theses added columns.
 from typing import List
 
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+from .utils import encode_location
 
-from .holiday_utils import (is_holiday, distance_next_holiday,
-                            distance_previous_holiday,
-                            distance_to_holidays)
+from .utils import (is_holiday, distance_next_holiday,
+                    distance_previous_holiday,
+                    distance_to_holidays)
 
 
 def add_is_holiday(df: pd.DataFrame) -> List[str]:
@@ -98,10 +98,12 @@ def add_distance_to_holidays(df: pd.DataFrame) -> List[str]:
 
 def add_day_of_year(df: pd.DataFrame) -> List[str]:
     """Add day of year to data frame.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
@@ -121,20 +123,19 @@ def add_day_of_year(df: pd.DataFrame) -> List[str]:
 
 def encode_loc(df: pd.DataFrame) -> List[str]:
     """Encode.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
         returns list of added columns.
     """
-    encoder = LabelEncoder()
-    encoder.fit(df['from'])
-
-    df['from_enc'] = encoder.transform(df['from'])
-    df['to_enc'] = encoder.transform(df['to'])
+    df['from_enc'] = encode_location(df['from'])
+    df['to_enc'] = encode_location(df['to'])
 
     new_cols = ['from_enc', 'to_enc']
     return new_cols
