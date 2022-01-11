@@ -137,7 +137,37 @@ def encode_loc(df: pd.DataFrame) -> List[str]:
     df['from_enc'] = encode_location(df['from'])
     df['to_enc'] = encode_location(df['to'])
 
+    # get new cols
     new_cols = ['from_enc', 'to_enc']
+
+    return new_cols
+
+
+def special_one_hot_encode(df: pd.DataFrame) -> List[str]:
+    """[summary]
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        flight data frame.
+
+    Returns
+    -------
+    List[str]
+        [description]
+    """
+    # construct dummies
+    dummies_source = pd.get_dummies(df["from"])
+    dummies_destination = pd.get_dummies(df["to"])
+    df_one_hot_enc = dummies_destination + (-1) * dummies_source
+
+    # append features to df
+    for col in df_one_hot_enc.columns:
+        df[col] = df_one_hot_enc[col]
+
+    # get new cols
+    new_cols = list(df_one_hot_enc.columns)
+
     return new_cols
 
 
@@ -148,4 +178,5 @@ dict_enrich = {
     'add_distance_to_holidays': add_distance_to_holidays,
     'add_day_of_year': add_day_of_year,
     'encode_locations': encode_loc,
+    'special_loc_encoding': special_one_hot_encode
 }

@@ -253,7 +253,7 @@ class Experiment:
             sub_path = path + '/'+'submission.csv'
             print('generate submission ', sub_path)
             # to csv
-            submission.to_csv(sub_path, index=False)
+            submission.to_csv(sub_path, index=False, header=False)
 
 
 # feature importance util
