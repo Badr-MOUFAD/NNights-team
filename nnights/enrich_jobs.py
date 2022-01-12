@@ -140,6 +140,61 @@ def encode_loc(df: pd.DataFrame) -> List[str]:
     return new_cols
 
 
+def add_path_distance(df: pd.DataFrame) -> List[str]:
+    """Add distance (km) col given flight path 
+    Parameters
+    ----------
+    df : pd.DataFrame
+        flight data frame.
+    Returns
+    -------
+    List[str]
+        returns list of added columns.
+    """
+    path_distances = pd.read_csv('../data/path_distances.csv')
+    df['path_distance'] = df.apply(lambda row: path_distances[(path_distances['from'] == row['from']) & (
+        path_distances['to'] == row['to'])]['distance'].values[0], axis=1)
+    # get new cols
+    new_cols = ['path_distance']
+
+    return new_cols
+
+
+def add_path_embedding(df: pd.DataFrame) -> List[str]:
+    """Add degree centrality 
+    Parameters
+    ----------
+    df : pd.DataFrame
+        flight data frame.
+    Returns
+    -------
+    List[str]
+        returns list of added columns.
+    """
+    # get degree centrality
+    import json
+    with open('../data/in_degree.json') as f:
+        in_degree = json.load(f)
+    with open('../data/out_degree.json') as f:
+        out_degree = json.load(f)
+
+    # add in degree  from node
+    df['from_in_degree'] = df.apply(lambda row: in_degree[row['from']], axis=1)
+    # add out degree  from node
+    df['from_out_degree'] = df.apply(
+        lambda row: out_degree[row['from']], axis=1)
+    # add in degree  to node
+    df['to_in_degree'] = df.apply(lambda row: in_degree[row['to']], axis=1)
+    # add out degree  to node
+    df['to_out_degree'] = df.apply(lambda row: out_degree[row['to']], axis=1)
+
+    # get new cols
+    new_cols = ['from_in_degree', 'from_out_degree',
+                'to_in_degree', 'to_out_degree']
+
+    return new_cols
+
+
 dict_enrich = {
     'add_is_holiday': add_is_holiday,
     'add_distance_to_next_holiday': add_distance_to_next_holiday,
@@ -147,4 +202,6 @@ dict_enrich = {
     'add_distance_to_holidays': add_distance_to_holidays,
     'add_day_of_year': add_day_of_year,
     'encode_locations': encode_loc,
+    'add_path_distance': add_path_distance,
+    'add_path_embedding': add_path_embedding,
 }
