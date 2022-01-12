@@ -9,11 +9,11 @@ add columns to it and then outputs theses added columns.
 from typing import List
 
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+from .utils import encode_location
 
-from .holiday_utils import (is_holiday, distance_next_holiday,
-                            distance_previous_holiday,
-                            distance_to_holidays)
+from .utils import (is_holiday, distance_next_holiday,
+                    distance_previous_holiday,
+                    distance_to_holidays)
 
 
 def add_is_holiday(df: pd.DataFrame) -> List[str]:
@@ -98,10 +98,12 @@ def add_distance_to_holidays(df: pd.DataFrame) -> List[str]:
 
 def add_day_of_year(df: pd.DataFrame) -> List[str]:
     """Add day of year to data frame.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
@@ -121,22 +123,51 @@ def add_day_of_year(df: pd.DataFrame) -> List[str]:
 
 def encode_loc(df: pd.DataFrame) -> List[str]:
     """Encode.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
         returns list of added columns.
     """
-    encoder = LabelEncoder()
-    encoder.fit(df['from'])
+    df['from_enc'] = encode_location(df['from'])
+    df['to_enc'] = encode_location(df['to'])
 
-    df['from_enc'] = encoder.transform(df['from'])
-    df['to_enc'] = encoder.transform(df['to'])
-
+    # get new cols
     new_cols = ['from_enc', 'to_enc']
+
+    return new_cols
+
+
+def special_one_hot_encode(df: pd.DataFrame) -> List[str]:
+    """[summary]
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        flight data frame.
+
+    Returns
+    -------
+    List[str]
+        [description]
+    """
+    # construct dummies
+    dummies_source = pd.get_dummies(df["from"])
+    dummies_destination = pd.get_dummies(df["to"])
+    df_one_hot_enc = dummies_destination + (-1) * dummies_source
+
+    # append features to df
+    for col in df_one_hot_enc.columns:
+        df[col] = df_one_hot_enc[col]
+
+    # get new cols
+    new_cols = list(df_one_hot_enc.columns)
+
     return new_cols
 
 
@@ -204,4 +235,5 @@ dict_enrich = {
     'encode_locations': encode_loc,
     'add_path_distance': add_path_distance,
     'add_path_embedding': add_path_embedding,
+    'special_loc_encoding': special_one_hot_encode
 }

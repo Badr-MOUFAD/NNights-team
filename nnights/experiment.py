@@ -12,12 +12,15 @@ from nnights.enrich_jobs import dict_enrich
 from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+
 import xgboost as xgb
 import matplotlib.pyplot as plt
 
 
-class Experiment():
-    """summary."""
+class Experiment:
+    """[summary]."""
 
     def __init__(self, name, data) -> None:  # noqa
         self.data = data
@@ -27,7 +30,8 @@ class Experiment():
             'cache': {
                 'data': None,
                 'x_columns': [],
-                'model': None
+                'model': None,
+                'scaler': None
             },
             'exp_name': self.name
         }
@@ -84,9 +88,30 @@ class Experiment():
         use_cv = config['train_params'].get('use_cv', False)
 
         # prepare data
-
         X = data[x_columns]
         y = data['target']
+
+        # scale data
+        scale: dict = config.get("scale", None)
+        if scale:
+            # params
+            li_features = scale["li_features"]
+
+            # init feature scaler
+            col_scaler = ColumnTransformer(
+                transformers=[
+                    ('scaled', StandardScaler(), li_features)
+                ]
+            )
+
+            # fit and save
+            col_scaler.fit(X)
+            scaler_cache = {"li_features": li_features,
+                            "col_scaler": col_scaler}
+            self.meta["cache"]["scaler"] = scaler_cache
+
+            # transform data
+            X[li_features] = pd.DataFrame(col_scaler.transform(X))
 
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42)
@@ -98,17 +123,21 @@ class Experiment():
         # model fiting
         print('> fit model ...')
         xgbr = xgb.XGBRegressor(**model_params)
-        print(' model :', xgbr)
+        print('model :', xgbr)
         # fit model
         xgbr.fit(X_train, y_train)
+
         # score on validation
         predictions_val = xgbr.predict(X_test)
         predictions_train = xgbr.predict(X_train)
-        print('> score model ...')
-        print("Mean Absolute Error (on train) : " +
-              str(mean_absolute_error(predictions_train, y_train)))
-        print("Mean Absolute Error (on validation) : " +
-              str(mean_absolute_error(predictions, y_test)))
+
+        error_train = mean_squared_error(predictions_train, y_train)
+        error_val = mean_squared_error(predictions_val, y_test)
+
+        print('> score model ...\n'
+              f"Mean Absolute Error (on train) : {error_train}\n"
+              f"Mean Absolute Error (on validation) : {error_val}"
+              )
 
         # feat importance.
         print('--Feat imporance  ...')
@@ -162,12 +191,25 @@ class Experiment():
     def generate_submission(self, X_data):
         # get enrich config.
         enrich_config = self.meta['cache']['enrich_config']
+
         # enrich data
         X_data_enrich, _ = self.enrich_jobs(
             enrich_config, data=X_data, is_inference=True)
+
         # get model and x_cols from cache
         model = self.meta['cache']['model']
         x_columns = self.meta['cache']['x_columns']
+
+        # scale
+        cache_scaler = self.meta["cache"]["scaler"]
+        if cache_scaler:
+            li_features = cache_scaler["li_features"]
+            col_scaler = cache_scaler["col_scaler"]
+
+            # scale data
+            X_data_enrich[li_features] = pd.DataFrame(
+                col_scaler(X_data_enrich))
+
         # predict on data
         predictions = model.predict(X_data_enrich[x_columns])
         print(predictions[:5])
@@ -199,7 +241,6 @@ class Experiment():
             'date': '',
             'config_enrich': self.meta['cache']['enrich_config'],
             'x_columns': self.meta['cache']['x_columns']
-
         }
 
         meta_path = path+'/'+'metadata.json'
@@ -212,7 +253,7 @@ class Experiment():
             sub_path = path + '/'+'submission.csv'
             print('generate submission ', sub_path)
             # to csv
-            submission.to_csv(sub_path, index=False)
+            submission.to_csv(sub_path, index=False, header=False)
 
 
 # feature importance util
