@@ -182,7 +182,7 @@ def add_path_distance(df: pd.DataFrame) -> List[str]:
     List[str]
         returns list of added columns.
     """
-    path_distances = pd.read_csv('../data/path_distances.csv')
+    path_distances = pd.read_csv('data/path_distances.csv')
     df['path_distance'] = df.apply(lambda row: path_distances[(path_distances['from'] == row['from']) & (
         path_distances['to'] == row['to'])]['distance'].values[0], axis=1)
     # get new cols
@@ -204,9 +204,9 @@ def add_path_embedding(df: pd.DataFrame) -> List[str]:
     """
     # get degree centrality
     import json
-    with open('../data/in_degree.json') as f:
+    with open('data/in_degree.json') as f:
         in_degree = json.load(f)
-    with open('../data/out_degree.json') as f:
+    with open('data/out_degree.json') as f:
         out_degree = json.load(f)
 
     # add in degree  from node

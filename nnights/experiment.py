@@ -183,13 +183,13 @@ class Experiment:
               )
 
         # feat importance.
-        # print('--Feat imporance  ...')
-        # print(' ')
-        # feat_imporatance = self.get_feat_imporance(xgbr, x_columns)
-        # # pprint.pprint(feat_imporatance)
-        # plt.bar(list(feat_imporatance.keys()), list(feat_imporatance.values()))
-        # plt.xticks(rotation=90)
-        # plt.show()
+        print('--Feat imporance  ...')
+        print(' ')
+        feat_imporatance = self.get_feat_imporance(xgbr, x_columns)
+
+        plt.bar(list(feat_imporatance.keys()), list(feat_imporatance.values()))
+        plt.xticks(rotation=90)
+        plt.show()
 
         # log
         self.meta['cache']['model'] = xgbr
@@ -264,7 +264,7 @@ class Experiment:
         """[summary]."""
         # create folder by exp name
         import os
-        path = path+'/'+self.name
+        path = path + '/' + self.name
 
         try:
             os.mkdir(path)
