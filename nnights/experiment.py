@@ -10,13 +10,15 @@ import joblib
 from nnights.enrich_jobs import dict_enrich
 
 from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
-from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_squared_error
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 
 import xgboost as xgb
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 class Experiment:
@@ -35,7 +37,6 @@ class Experiment:
             },
             'exp_name': self.name
         }
-
         pass
 
     def enrich_jobs(
@@ -59,14 +60,51 @@ class Experiment:
 
         return data_copy, new_columns
 
-    def cross_validate(self, X, y, model_params):
+    def cross_validate_model(self, model, X, y):
+        # cross val with rmse
+        nb_folds = 10
+        scores = -cross_val_score(model, X, y, cv=nb_folds,
+                                  scoring="neg_root_mean_squared_error")
 
-        dmatrix = xgb.DMatrix(data=X, label=y)
-        cv_results = xgb.cv(dtrain=dmatrix,
-                            params=model_params,
-                            nfold=10,
-                            metrics={'rmse'})
-        return cv_results
+        props_std_plot = dict(
+            mode="lines",
+            line_width=1,
+            marker_color='#EF553B',
+        )
+
+        mean_scores = scores.mean()
+        std_scores = scores.std()
+
+        fig = go.Figure(
+            data=[
+                go.Scatter(y=scores, name="rmse"),
+                go.Scatter(
+                    y=[mean_scores for _ in range(nb_folds)],
+                    mode="lines",
+                    marker_color='#EF553B',
+                    name="mean"
+                ),
+                go.Scatter(
+                    y=[mean_scores + std_scores for _ in range(nb_folds)],
+                    showlegend=False,
+                    **props_std_plot
+                ),
+                go.Scatter(
+                    y=[mean_scores - std_scores for _ in range(nb_folds)],
+                    fill='tonexty',
+                    name="std",
+                    **props_std_plot
+                ),
+            ]
+        )
+
+        fig.update_layout(
+            title='Result cross validation',
+            yaxis_title="score"
+        )
+
+        fig.show()
+        return
 
     def get_feat_imporance(self, model, x_columns):
         feat_imp = dict(zip(x_columns, model.feature_importances_))
@@ -113,40 +151,45 @@ class Experiment:
             # transform data
             X[li_features] = pd.DataFrame(col_scaler.transform(X))
 
+        # split data
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42)
+            X, y, test_size=0.2, random_state=123654)
 
-        if use_cv:
-            cv_results = self.cross_validate(X_train, y_train, model_params)
-            print('> cv results : ')
-            print(cv_results)
-        # model fiting
+        # init model
         print('> fit model ...')
-        xgbr = xgb.XGBRegressor(**model_params)
+        xgbr = RandomForestRegressor()  # xgb.XGBRegressor(**model_params)
         print('model :', xgbr)
+
+        # cross-val
+        if use_cv:
+            print('> cv results : ')
+            self.cross_validate_model(xgbr, X_train, y_train)
+
         # fit model
         xgbr.fit(X_train, y_train)
 
         # score on validation
-        predictions_val = xgbr.predict(X_test)
+        predictions_test = xgbr.predict(X_test)
         predictions_train = xgbr.predict(X_train)
 
-        error_train = mean_squared_error(predictions_train, y_train)
-        error_val = mean_squared_error(predictions_val, y_test)
+        error_train = mean_squared_error(
+            predictions_train, y_train, squared=False)
+        error_test = mean_squared_error(
+            predictions_test, y_test, squared=False)
 
         print('> score model ...\n'
-              f"Mean Absolute Error (on train) : {error_train}\n"
-              f"Mean Absolute Error (on validation) : {error_val}"
+              f"RMSE on train : {error_train}\n"
+              f"RMSE on test : {error_test}"
               )
 
         # feat importance.
-        print('--Feat imporance  ...')
-        print(' ')
-        feat_imporatance = self.get_feat_imporance(xgbr, x_columns)
-        # pprint.pprint(feat_imporatance)
-        plt.bar(list(feat_imporatance.keys()), list(feat_imporatance.values()))
-        plt.xticks(rotation=90)
-        plt.show()
+        # print('--Feat imporance  ...')
+        # print(' ')
+        # feat_imporatance = self.get_feat_imporance(xgbr, x_columns)
+        # # pprint.pprint(feat_imporatance)
+        # plt.bar(list(feat_imporatance.keys()), list(feat_imporatance.values()))
+        # plt.xticks(rotation=90)
+        # plt.show()
 
         # log
         self.meta['cache']['model'] = xgbr
