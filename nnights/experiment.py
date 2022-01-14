@@ -10,7 +10,7 @@ import joblib
 from nnights.enrich_jobs import dict_enrich
 
 from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_squared_error
 from sklearn.compose import ColumnTransformer
@@ -157,7 +157,9 @@ class Experiment:
 
         # init model
         print('> fit model ...')
-        xgbr = RandomForestRegressor()  # xgb.XGBRegressor(**model_params)
+        xgbr = Gb_regressor(max_depth=8)
+
+        # xgb.XGBRegressor(**model_params)
         print('model :', xgbr)
 
         # cross-val
