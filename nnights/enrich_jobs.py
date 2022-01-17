@@ -1,12 +1,11 @@
-# @title
-# enrich_jobs.py
-
 """Jobs run on data to enrich it.
+
 A job is a function that takes the flight data frame as inputs
 add columns to it and then outputs theses added columns.
 """
 
 from typing import List
+import json
 
 import pandas as pd
 from .utils import encode_location
@@ -18,10 +17,12 @@ from .utils import (is_holiday, distance_next_holiday,
 
 def add_is_holiday(df: pd.DataFrame) -> List[str]:
     """Determine if dates are holidays.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
@@ -35,10 +36,12 @@ def add_is_holiday(df: pd.DataFrame) -> List[str]:
 
 def add_distance_to_next_holiday(df: pd.DataFrame) -> List[str]:
     """Compute distance to the next holiday.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
@@ -53,10 +56,12 @@ def add_distance_to_next_holiday(df: pd.DataFrame) -> List[str]:
 
 def add_distance_to_previous_holiday(df: pd.DataFrame) -> List[str]:
     """Compute the distance to the previous holiday.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
@@ -71,10 +76,12 @@ def add_distance_to_previous_holiday(df: pd.DataFrame) -> List[str]:
 
 def add_distance_to_holidays(df: pd.DataFrame) -> List[str]:
     """Compute the distance between dates and holidays.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
@@ -144,17 +151,17 @@ def encode_loc(df: pd.DataFrame) -> List[str]:
 
 
 def special_one_hot_encode(df: pd.DataFrame) -> List[str]:
-    """[summary]
+    """Encode source target like adjacency matrix.
 
     Parameters
     ----------
     df : pd.DataFrame
-        flight data frame.
+        flight dataset.
 
     Returns
     -------
     List[str]
-        [description]
+        returns list of added columns.
     """
     # construct dummies
     dummies_source = pd.get_dummies(df["from"])
@@ -172,11 +179,13 @@ def special_one_hot_encode(df: pd.DataFrame) -> List[str]:
 
 
 def add_path_distance(df: pd.DataFrame) -> List[str]:
-    """Add distance (km) col given flight path 
+    """Add distance (km) col given flight path.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
@@ -192,18 +201,19 @@ def add_path_distance(df: pd.DataFrame) -> List[str]:
 
 
 def add_path_embedding(df: pd.DataFrame) -> List[str]:
-    """Add degree centrality 
+    """Add degree centrality.
+
     Parameters
     ----------
     df : pd.DataFrame
         flight data frame.
+
     Returns
     -------
     List[str]
         returns list of added columns.
     """
-    # get degree centrality
-    import json
+    # load degree centrality
     with open('data/in_degree.json') as f:
         in_degree = json.load(f)
     with open('data/out_degree.json') as f:
@@ -226,6 +236,7 @@ def add_path_embedding(df: pd.DataFrame) -> List[str]:
     return new_cols
 
 
+# put all enrich jobs in a dict
 dict_enrich = {
     'add_is_holiday': add_is_holiday,
     'add_distance_to_next_holiday': add_distance_to_next_holiday,
