@@ -1,21 +1,26 @@
 # @title Default title text
 """[summary]."""
 
+from random import Random
 from typing import List
-import numpy as np
-import pandas as pd
 import json
 import joblib
+import os
+
+from sympy import N
 
 from nnights.enrich_jobs import dict_enrich
 
+
 from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import (train_test_split,
+                                     cross_val_score, GridSearchCV)
 from sklearn.metrics import mean_squared_error
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 
+import pandas as pd
 import xgboost as xgb
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -27,6 +32,7 @@ class Experiment:
     def __init__(self, name, data) -> None:  # noqa
         self.data = data
         self.name = name
+        self.default_model = RandomForestRegressor
 
         self.meta = {
             'cache': {
@@ -119,10 +125,7 @@ class Experiment:
         config: dict
     ):
         """[summary]."""
-        # destruct config.
-        default_params = {'objective': 'reg:squarederror'}
-        model_params = config['model_params'].get(
-            'model_params', default_params)
+        model_params = config.get('model_params', {})
         use_cv = config['train_params'].get('use_cv', False)
 
         # prepare data
@@ -130,7 +133,7 @@ class Experiment:
         y = data['target']
 
         # scale data
-        scale: dict = config.get("scale", None)
+        scale: dict = config['train_params'].get("scale", None)
         if scale:
             # params
             li_features = scale["li_features"]
@@ -157,9 +160,8 @@ class Experiment:
 
         # init model
         print('> fit model ...')
-        xgbr = Gb_regressor(max_depth=8)
-
-        # xgb.XGBRegressor(**model_params)
+        model = config.get("model_instance", RandomForestRegressor)
+        xgbr = model(**model_params)
         print('model :', xgbr)
 
         # cross-val
@@ -197,14 +199,12 @@ class Experiment:
         self.meta['cache']['model'] = xgbr
 
     def run(
-        self,
-        config: dict,
-        use_cache: bool = False
-    ) -> pd.DataFrame:
+            self,
+            config: dict,
+            use_cache: bool = False):
         """[summary]."""
         if use_cache:  # skip enrichment
             pass
-
         else:
             # step 1 : enrich data
             config_enrich = config.get('enrich', None)
@@ -233,6 +233,65 @@ class Experiment:
             print('x_columns : ', x_columns)
             self.model_data(data, x_columns, config_model)
 
+        return
+
+    def grid_search(self, config: dict, use_cache=True):
+        """[summary].
+
+        Parameters
+        ----------
+        config : dict
+            dictionary of configuration.
+        """
+        # enrich data
+        if use_cache:
+            pass
+
+        else:
+            # step 1 : enrich data
+            config_enrich = config.get('enrich', None)
+            x_cols = config.get('x_columns', [])
+            if config_enrich:
+                print('-- Enrich start ------------- ')
+                enriched_data, new_cols = self.enrich_jobs(config_enrich)
+
+                # cache element
+                self.meta['cache']['data'] = enriched_data
+                self.meta['cache']['x_columns'] = x_cols + new_cols
+                # store enrichment config for inference reproduction
+                self.meta['cache']['enrich_config'] = config_enrich
+            else:
+                self.meta['cache']['data'] = self.data
+                self.meta['cache']['x_columns'] = x_cols
+
+        # split data
+        data = self.meta['cache']['data']
+        x_columns = self.meta['cache']['x_columns']
+
+        X = data[x_columns]
+        y = data["target"]
+
+        X_train, _, y_train, _ = train_test_split(X, y,
+                                                  test_size=.2, random_state=123654)
+
+        # model instance
+        model_instance = config.get("model_instance", RandomForestRegressor)
+        grid_config = config.get("grid_config", None)
+
+        # init grid
+        grid_search_mod = GridSearchCV(
+            model_instance(),
+            scoring="neg_root_mean_squared_error",
+            return_train_score=True,
+            verbose=2,
+            **grid_config
+        )
+
+        # fit
+        grid_search_mod.fit(X_train, y_train)
+
+        return -grid_search_mod.best_score_, grid_search_mod.best_params_
+
     def generate_submission(self, X_data):
         # get enrich config.
         enrich_config = self.meta['cache']['enrich_config']
@@ -253,7 +312,7 @@ class Experiment:
 
             # scale data
             X_data_enrich[li_features] = pd.DataFrame(
-                col_scaler(X_data_enrich))
+                col_scaler.transform(X_data_enrich))
 
         # predict on data
         predictions = model.predict(X_data_enrich[x_columns])
@@ -265,41 +324,36 @@ class Experiment:
     def freeze(self, path, X_data, with_sub=False):
         """[summary]."""
         # create folder by exp name
-        import os
         path = path + '/' + self.name
 
         try:
             os.mkdir(path)
         except OSError:
-            print("Creation of the directory %s failed" % path)
+            print(f"Creation of the directory {path} failed")
         else:
-            print("Successfully created the directory %s " % path)
+            print(f"Successfully created the directory {path}")
 
         # pickle model
         # get model
         model = self.meta['cache']['model']
-        model_path = path+'/'+'model.joblib.dat'
+        model_path = f"{path}/model.joblib.dat"
         joblib.dump(model, model_path)
-        # store metadata
 
+        # store metadata
         meta = {
             'date': '',
             'config_enrich': self.meta['cache']['enrich_config'],
             'x_columns': self.meta['cache']['x_columns']
         }
 
-        meta_path = path+'/'+'metadata.json'
+        meta_path = f"{path}/metadata.json"
         with open(meta_path, "w") as outfile:
             json.dump(meta, outfile)
 
         # generate submission
         if with_sub:
             submission = self.generate_submission(X_data)
-            sub_path = path + '/'+'submission.csv'
+            sub_path = f"{path}/submission.csv"
             print('generate submission ', sub_path)
             # to csv
             submission.to_csv(sub_path, index=False, header=False)
-
-
-# feature importance util
-# exp diff on previous model got from freeze
