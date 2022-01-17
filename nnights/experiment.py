@@ -1,19 +1,14 @@
 # @title Default title text
-"""[summary]."""
+"""Main class for building training and evaluating models."""
 
-from random import Random
 from typing import List
 import json
 import joblib
 import os
 
-from sympy import N
-
 from nnights.enrich_jobs import dict_enrich
 
-
-from sklearn.ensemble import GradientBoostingRegressor as Gb_regressor
-from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import (train_test_split,
                                      cross_val_score, GridSearchCV)
 from sklearn.metrics import mean_squared_error
@@ -21,14 +16,11 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 
 import pandas as pd
-import xgboost as xgb
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 
-class Experiment:
-    """[summary]."""
-
+class Experiment:  # noqa
     def __init__(self, name, data) -> None:  # noqa
         self.data = data
         self.name = name
@@ -50,7 +42,7 @@ class Experiment:
         config: dict,
         is_inference: bool = False,
         data: pd.DataFrame = None
-    ):
+    ):  # noqa
         """[summary]."""
         if is_inference:
             data_copy = data
@@ -66,7 +58,22 @@ class Experiment:
 
         return data_copy, new_columns
 
-    def cross_validate_model(self, model, X, y):
+    def cross_validate_model(
+            self,
+            model,
+            X: pd.DataFrame,
+            y: pd.DataFrame):
+        """[summary].
+
+        Parameters
+        ----------
+        model : [type]
+            [description]
+        X : pd.DataFrame
+            [description]
+        y : pd.DataFrame
+            [description]
+        """
         # cross val with rmse
         nb_folds = 10
         scores = -cross_val_score(model, X, y, cv=nb_folds,
@@ -112,7 +119,24 @@ class Experiment:
         fig.show()
         return
 
-    def get_feat_imporance(self, model, x_columns):
+    def get_feat_imporance(
+            self,
+            model,
+            x_columns: List[str]):
+        """[summary].
+
+        Parameters
+        ----------
+        model : [type]
+            [description]
+        x_columns : List[str]
+            [description]
+
+        Returns
+        -------
+        [type]
+            [description]
+        """
         feat_imp = dict(zip(x_columns, model.feature_importances_))
         sorted_feat_imp = {k: v for k, v in sorted(
             feat_imp.items(), key=lambda item: item[1])}
@@ -272,7 +296,8 @@ class Experiment:
         y = data["target"]
 
         X_train, _, y_train, _ = train_test_split(X, y,
-                                                  test_size=.2, random_state=123654)
+                                                  test_size=.2,
+                                                  random_state=123654)
 
         # model instance
         model_instance = config.get("model_instance", RandomForestRegressor)
@@ -292,7 +317,19 @@ class Experiment:
 
         return -grid_search_mod.best_score_, grid_search_mod.best_params_
 
-    def generate_submission(self, X_data):
+    def generate_submission(self, X_data: pd.DataFrame):
+        """[summary].
+
+        Parameters
+        ----------
+        X_data : [type]
+            [description]
+
+        Returns
+        -------
+        [type]
+            [description]
+        """
         # get enrich config.
         enrich_config = self.meta['cache']['enrich_config']
 
@@ -321,7 +358,7 @@ class Experiment:
         submission = pd.DataFrame(predictions)
         return submission
 
-    def freeze(self, path, X_data, with_sub=False):
+    def freeze(self, path: str, X_data: pd.DataFrame, with_sub=False):
         """[summary]."""
         # create folder by exp name
         path = path + '/' + self.name

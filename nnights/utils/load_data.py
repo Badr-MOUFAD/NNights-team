@@ -1,3 +1,8 @@
+"""Module to load flights data.
+
+Data is loaded while parsing date and sorting observations
+with regard to date.
+"""
 
 import pandas as pd
 

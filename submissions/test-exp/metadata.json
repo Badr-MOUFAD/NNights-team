@@ -1,1 +1,0 @@
-{"date": "", "config_enrich": ["add_day_of_year", "encode_locations"], "x_columns": ["avg_weeks", "std_weeks", "day_of_year", "from_enc", "to_enc"]}

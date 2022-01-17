@@ -6,7 +6,7 @@ Given source and target, the model predict the mean in this path.
 import pandas as pd
 
 
-class BaseModel:
+class BaseModel:  # noqa
     def __init__(self, cols_path='from to', col_y='target') -> None:  # noqa
         # params
         self.cols_path = cols_path.split(" ")
