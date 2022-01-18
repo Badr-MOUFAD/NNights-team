@@ -25,8 +25,9 @@ class BaseModel:  # noqa
         cols_path = self.cols_path
         col_y = self.col_y
 
-        # build loo up table
+        # build look up table
         self.table_path_target = X.groupby(by=cols_path).mean()[col_y]
+        self.mean_target = self.table_path_target.mean()
         return
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
@@ -48,7 +49,7 @@ class BaseModel:  # noqa
         return path_col.apply(self._predictor)
 
     def _predictor(self, tulpe_as_str: str) -> float:
-        """Predict a single value given a path.
+        """Predict a single value given a path (source, destination).
 
         Parameters
         ----------
@@ -63,4 +64,9 @@ class BaseModel:  # noqa
         # form el of tuple
         source, destination = [el for el in tulpe_as_str.split(",")]
 
-        return self.table_path_target.loc[(source, destination)]
+        # case path exists in table
+        try:
+            return self.table_path_target.loc[(source, destination)]
+        # case path not in table
+        except:  # noqa
+            return self.mean_target
